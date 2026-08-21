@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사고보고 관리</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="wide-container">
+    <div class="top-bar">
+      <div>
+        <h1 style="margin-bottom:0;">매장 사고보고 관리</h1>
+        <div class="subtitle" style="margin-bottom:0;">총 {{ reports|length }}건</div>
+      </div>
+      <div>
+        <a href="{{ url_for('export_excel', **filters) }}" class="btn">엑셀 다운로드</a>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary">로그아웃</a>
+      </div>
+    </div>
+
+    <form class="filter-bar" method="GET">
+      <div>
+        <label>브랜드</label>
+        <select name="brand">
+          <option value="">전체</option>
+          {% for b in brands %}
+            <option value="{{ b }}" {% if filters.brand == b %}selected{% endif %}>{{ b }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>사고유형</label>
+        <select name="incident_type">
+          <option value="">전체</option>
+          {% for t in incident_types %}
+            <option value="{{ t }}" {% if filters.incident_type == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>처리상태</label>
+        <select name="status">
+          <option value="">전체</option>
+          {% for s in status_list %}
+            <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>시작일</label>
+        <input type="date" name="date_from" value="{{ filters.date_from }}">
+      </div>
+      <div>
+        <label>종료일</label>
+        <input type="date" name="date_to" value="{{ filters.date_to }}">
+      </div>
+      <div>
+        <button type="submit" class="btn btn-small">필터 적용</button>
+      </div>
+    </form>
+
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>번호</th>
+            <th>브랜드</th>
+            <th>매장코드</th>
+            <th>매장명</th>
+            <th>사고발생일시</th>
+            <th>사고유형</th>
+            <th>사고내용</th>
+            <th>고객정보</th>
+            <th>매장조치</th>
+            <th>작성자</th>
+            <th>사진</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reports %}
+          <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.brand }}</td>
+            <td>{{ r.store_code }}</td>
+            <td>{{ r.store_name }}</td>
+            <td>{{ r.incident_datetime }}</td>
+            <td>{{ r.incident_type }}</td>
+            <td style="max-width:260px;">{{ r.description }}</td>
+            <td>{{ r.customer_name }} {{ r.customer_phone }}</td>
+            <td style="max-width:220px;">{{ r.action_taken }}</td>
+            <td>{{ r.reporter_name }}</td>
+            <td>
+              {% if r.photo_filenames %}
+                {% for fn in r.photo_filenames.split(',') %}
+                  {% if fn %}
+                    <a href="{{ url_for('view_photo', filename=fn) }}" target="_blank">
+                      <img class="photo-thumb" src="{{ url_for('view_photo', filename=fn) }}" alt="사진">
+                    </a>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('update_status', report_id=r.id, **filters) }}">
+                <select name="status" onchange="this.form.submit()" class="badge {{ r.status }}">
+                  {% for s in status_list %}
+                    <option value="{{ s }}" {% if r.status == s %}selected{% endif %}>{{ s }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="11" style="text-align:center; color:#999;">접수된 사고보고가 없습니다.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

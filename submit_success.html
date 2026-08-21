@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>제출 완료</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="success-box">
+      <div class="check">✔</div>
+      <h1>사고보고가 접수되었습니다</h1>
+      <p style="color:#777; margin-bottom: 28px;">CX팀에서 확인 후 필요 시 매장으로 연락드릴 수 있습니다.</p>
+      <a href="{{ url_for('submit_report') }}" class="btn">추가 보고 작성하기</a>
+    </div>
+  </div>
+</body>
+</html>
