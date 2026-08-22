@@ -81,15 +81,11 @@
           {% endfor %}
         </select>
 
-         <label>주변 및 매장 내 추가 발생 여부 (해충)</label>
+        <label>주변 및 매장 내 추가 발생 여부 (해충)</label>
         <textarea name="additional_occurrence" placeholder="자유롭게 작성해주세요">{{ form.get('additional_occurrence', '') }}</textarea>
 
         <label class="required">고객명</label>
         <input type="text" name="customer_name" value="{{ form.get('customer_name', '') }}" required>
-        </select>
-
-        <label>고객명 (선택)</label>
-        <input type="text" name="customer_name" value="{{ form.get('customer_name', '') }}">
 
         <label>고객 연락처 (선택)</label>
         <input type="tel" name="customer_phone" placeholder="010-0000-0000" value="{{ form.get('customer_phone', '') }}">
