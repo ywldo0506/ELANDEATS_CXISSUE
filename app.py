@@ -239,8 +239,10 @@ def submit_report():
             errors.append("시간대(평일/주말 런치/디너)를 선택해주세요.")
         if not incident_type:
             errors.append("사고 유형을 선택해주세요.")
-        if not description:
+               if not description:
             errors.append("사고 내용을 입력해주세요.")
+        if not customer_name:
+            errors.append("고객명을 입력해주세요.")
         if not reporter_name:
             errors.append("작성자명을 입력해주세요.")
 
