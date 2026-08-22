@@ -72,6 +72,11 @@
             <th>시간대</th>
             <th>사고유형</th>
             <th>사고내용</th>
+            <th>응대자</th>
+            <th>발생위치</th>
+            <th>CCTV</th>
+            <th>음식혼입</th>
+            <th>추가발생</th>
             <th>고객정보</th>
             <th>매장조치</th>
             <th>작성자</th>
@@ -90,6 +95,11 @@
             <td>{{ r.time_slot }}</td>
             <td>{{ r.incident_type }}</td>
             <td style="max-width:260px;">{{ r.description }}</td>
+            <td>{{ r.responder }}</td>
+            <td>{{ r.location }}</td>
+            <td>{{ r.cctv_secured }}</td>
+            <td>{{ r.food_mixed }}</td>
+            <td>{{ r.additional_occurrence }}</td>
             <td>{{ r.customer_name }} {{ r.customer_phone }}</td>
             <td style="max-width:220px;">{{ r.action_taken }}</td>
             <td>{{ r.reporter_name }}</td>
@@ -117,7 +127,7 @@
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="11" style="text-align:center; color:#999;">접수된 사고보고가 없습니다.</td></tr>
+          <tr><td colspan="18" style="text-align:center; color:#999;">접수된 사고보고가 없습니다.</td></tr>
           {% endfor %}
         </tbody>
       </table>
