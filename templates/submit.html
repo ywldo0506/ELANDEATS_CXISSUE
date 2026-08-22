@@ -31,6 +31,7 @@
 
         <label class="required">매장코드</label>
         <input type="text" id="store_code" name="store_code" placeholder="매장코드를 입력하세요" value="{{ form.get('store_code', '') }}" autocomplete="off" required>
+        <div style="margin-top:4px; font-size:12px; color:#999;">꼭 영어 대문자로 입력해주세요 (예: AL210)</div>
         <div id="store_lookup_status" style="margin-top:6px; font-size:13px;"></div>
         <input type="hidden" id="store_name" name="store_name" value="{{ form.get('store_name', '') }}">
 
@@ -93,6 +94,10 @@
     }
 
     codeInput.addEventListener('input', function () {
+      const upper = codeInput.value.toUpperCase();
+      if (upper !== codeInput.value) {
+        codeInput.value = upper;
+      }
       const code = codeInput.value.trim();
       nameHidden.value = '';
       if (!code) {
