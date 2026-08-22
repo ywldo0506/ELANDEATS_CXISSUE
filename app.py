@@ -43,6 +43,14 @@ INCIDENT_TYPES = ["이물질", "해충", "식중독·장염", "화상·낙상 �
 STATUS_LIST = ["접수", "처리중", "완료"]
 TIME_SLOTS = ["평일 런치", "평일 디너", "주말 런치", "주말 디너"]
 
+DEFAULT_DESCRIPTION_TEMPLATE = (
+    "응대자: \n"
+    "발생 위치: \n"
+    "CCTV 확보 여부: \n"
+    "음식 혼입 여부(이물질/해충): \n"
+    "주변 및 매장 내 추가 발생 여부 (해충): "
+)
+
 # ----------------------------------------------------------------------
 # 매장코드-매장명 매칭용 구글시트 CSV 연동
 # ----------------------------------------------------------------------
@@ -268,7 +276,10 @@ def submit_report():
 
         return render_template("submit_success.html")
 
-    return render_template("submit.html", brands=BRANDS, incident_types=INCIDENT_TYPES, time_slots=TIME_SLOTS, form={})
+    return render_template(
+        "submit.html", brands=BRANDS, incident_types=INCIDENT_TYPES, time_slots=TIME_SLOTS,
+        form={"description": DEFAULT_DESCRIPTION_TEMPLATE}
+    )
 
 
 # ----------------------------------------------------------------------
