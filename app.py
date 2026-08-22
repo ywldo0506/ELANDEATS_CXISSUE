@@ -40,6 +40,7 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "eland2026")
 BRANDS = ["애슐리퀸즈", "로운", "피자몰 뷔페", "피자몰V2", "자연별곡", "리미니", "프랑제리", "반궁", "기타"]
 INCIDENT_TYPES = ["이물질", "식중독·장염", "화상·낙상 등 안전사고", "시설파손", "기타"]
 STATUS_LIST = ["접수", "처리중", "완료"]
+TIME_SLOTS = ["평일 런치", "평일 디너", "주말 런치", "주말 디너"]
 
 # ----------------------------------------------------------------------
 # 매장코드-매장명 매칭용 구글시트 CSV 연동
@@ -128,7 +129,9 @@ def init_db():
             brand TEXT NOT NULL,
             store_code TEXT,
             store_name TEXT NOT NULL,
-            incident_datetime TEXT NOT NULL,
+            incident_date TEXT NOT NULL,
+            time_slot TEXT NOT NULL,
+            incident_datetime TEXT,
             incident_type TEXT NOT NULL,
             description TEXT NOT NULL,
             customer_name TEXT,
@@ -140,11 +143,16 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
-    # 기존에 store_code 컬럼 없이 만들어진 DB가 있으면 추가해줍니다.
-    try:
-        conn.execute("ALTER TABLE reports ADD COLUMN store_code TEXT")
-    except sqlite3.OperationalError:
-        pass  # 이미 있으면 무시
+    # 기존에 없던 컬럼이 있으면 추가해줍니다 (이미 있으면 조용히 무시).
+    for ddl in (
+        "ALTER TABLE reports ADD COLUMN store_code TEXT",
+        "ALTER TABLE reports ADD COLUMN incident_date TEXT",
+        "ALTER TABLE reports ADD COLUMN time_slot TEXT",
+    ):
+        try:
+            conn.execute(ddl)
+        except sqlite3.OperationalError:
+            pass
     conn.commit()
     conn.close()
 
@@ -192,7 +200,8 @@ def submit_report():
         brand = request.form.get("brand", "").strip()
         store_code = request.form.get("store_code", "").strip()
         store_name = request.form.get("store_name", "").strip()
-        incident_datetime = request.form.get("incident_datetime", "").strip()
+        incident_date = request.form.get("incident_date", "").strip()
+        time_slot = request.form.get("time_slot", "").strip()
         incident_type = request.form.get("incident_type", "").strip()
         description = request.form.get("description", "").strip()
         customer_name = request.form.get("customer_name", "").strip()
@@ -207,8 +216,10 @@ def submit_report():
             errors.append("매장코드를 입력해주세요.")
         if not store_name:
             errors.append("매장코드를 확인해서 매장명이 자동으로 표시되어야 합니다. 코드를 다시 확인해주세요.")
-        if not incident_datetime:
-            errors.append("사고 발생일시를 입력해주세요.")
+        if not incident_date:
+            errors.append("사고 발생일을 입력해주세요.")
+        if not time_slot or time_slot not in TIME_SLOTS:
+            errors.append("시간대(평일/주말 런치/디너)를 선택해주세요.")
         if not incident_type:
             errors.append("사고 유형을 선택해주세요.")
         if not description:
@@ -221,7 +232,7 @@ def submit_report():
                 flash(e, "error")
             return render_template(
                 "submit.html", brands=BRANDS, incident_types=INCIDENT_TYPES,
-                form=request.form
+                time_slots=TIME_SLOTS, form=request.form
             )
 
         # 사진 저장
@@ -235,15 +246,19 @@ def submit_report():
                 file.save(os.path.join(UPLOAD_DIR, safe_name))
                 saved_filenames.append(safe_name)
 
+        display_datetime = f"{incident_date} ({time_slot})"
+
         conn = get_db()
         conn.execute("""
             INSERT INTO reports (
-                brand, store_code, store_name, incident_datetime, incident_type, description,
+                brand, store_code, store_name, incident_date, time_slot, incident_datetime,
+                incident_type, description,
                 customer_name, customer_phone, action_taken, reporter_name,
                 status, photo_filenames, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            brand, store_code, store_name, incident_datetime, incident_type, description,
+            brand, store_code, store_name, incident_date, time_slot, display_datetime,
+            incident_type, description,
             customer_name, customer_phone, action_taken, reporter_name,
             "접수", ",".join(saved_filenames), datetime.now().isoformat()
         ))
@@ -252,7 +267,7 @@ def submit_report():
 
         return render_template("submit_success.html")
 
-    return render_template("submit.html", brands=BRANDS, incident_types=INCIDENT_TYPES, form={})
+    return render_template("submit.html", brands=BRANDS, incident_types=INCIDENT_TYPES, time_slots=TIME_SLOTS, form={})
 
 
 # ----------------------------------------------------------------------
@@ -300,12 +315,12 @@ def admin_list():
         query += " AND status = ?"
         params.append(status_filter)
     if date_from:
-        query += " AND incident_datetime >= ?"
+        query += " AND incident_date >= ?"
         params.append(date_from)
     if date_to:
-        query += " AND incident_datetime <= ?"
-        params.append(date_to + "T23:59")
-    query += " ORDER BY incident_datetime DESC"
+        query += " AND incident_date <= ?"
+        params.append(date_to)
+    query += " ORDER BY incident_date DESC"
 
     conn = get_db()
     rows = conn.execute(query, params).fetchall()
@@ -369,12 +384,12 @@ def export_excel():
         query += " AND status = ?"
         params.append(status_filter)
     if date_from:
-        query += " AND incident_datetime >= ?"
+        query += " AND incident_date >= ?"
         params.append(date_from)
     if date_to:
-        query += " AND incident_datetime <= ?"
-        params.append(date_to + "T23:59")
-    query += " ORDER BY incident_datetime DESC"
+        query += " AND incident_date <= ?"
+        params.append(date_to)
+    query += " ORDER BY incident_date DESC"
 
     conn = get_db()
     rows = conn.execute(query, params).fetchall()
@@ -385,7 +400,7 @@ def export_excel():
     ws.title = "사고보고"
 
     headers = [
-        "번호", "브랜드", "매장코드", "매장명", "사고발생일시", "사고유형", "사고내용",
+        "번호", "브랜드", "매장코드", "매장명", "사고발생일", "시간대", "사고유형", "사고내용",
         "고객명", "고객연락처", "매장조치내용", "작성자", "처리상태",
         "사진개수", "접수시각"
     ]
@@ -402,14 +417,15 @@ def export_excel():
     for row in rows:
         photo_count = len([p for p in (row["photo_filenames"] or "").split(",") if p])
         ws.append([
-            row["id"], row["brand"], row["store_code"], row["store_name"], row["incident_datetime"],
+            row["id"], row["brand"], row["store_code"], row["store_name"],
+            row["incident_date"], row["time_slot"],
             row["incident_type"], row["description"], row["customer_name"],
             row["customer_phone"], row["action_taken"], row["reporter_name"],
             row["status"], photo_count, row["created_at"]
         ])
 
     # 열 너비 자동 조정 (대략)
-    widths = [6, 12, 10, 14, 18, 18, 40, 12, 14, 30, 10, 10, 8, 20]
+    widths = [6, 12, 10, 14, 12, 12, 18, 40, 12, 14, 30, 10, 10, 8, 20]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
