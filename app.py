@@ -42,14 +42,7 @@ BRANDS = ["애슐리 퀸즈", "로운", "피자몰 뷔페", "피자몰 V2", "자
 INCIDENT_TYPES = ["이물질", "해충", "식중독·장염", "화상·낙상 등 안전사고", "시설파손", "기타"]
 STATUS_LIST = ["접수", "처리중", "완료"]
 TIME_SLOTS = ["평일 런치", "평일 디너", "주말 런치", "주말 디너"]
-
-DEFAULT_DESCRIPTION_TEMPLATE = (
-    "응대자: \n"
-    "발생 위치: \n"
-    "CCTV 확보 여부: \n"
-    "음식 혼입 여부(이물질/해충): \n"
-    "주변 및 매장 내 추가 발생 여부 (해충): "
-)
+YES_NO_OPTIONS = ["예", "아니오", "미확인"]
 
 # ----------------------------------------------------------------------
 # 매장코드-매장명 매칭용 구글시트 CSV 연동
@@ -143,6 +136,11 @@ def init_db():
             incident_datetime TEXT,
             incident_type TEXT NOT NULL,
             description TEXT NOT NULL,
+            responder TEXT,
+            location TEXT,
+            cctv_secured TEXT,
+            food_mixed TEXT,
+            additional_occurrence TEXT,
             customer_name TEXT,
             customer_phone TEXT,
             action_taken TEXT,
@@ -157,6 +155,11 @@ def init_db():
         "ALTER TABLE reports ADD COLUMN store_code TEXT",
         "ALTER TABLE reports ADD COLUMN incident_date TEXT",
         "ALTER TABLE reports ADD COLUMN time_slot TEXT",
+        "ALTER TABLE reports ADD COLUMN responder TEXT",
+        "ALTER TABLE reports ADD COLUMN location TEXT",
+        "ALTER TABLE reports ADD COLUMN cctv_secured TEXT",
+        "ALTER TABLE reports ADD COLUMN food_mixed TEXT",
+        "ALTER TABLE reports ADD COLUMN additional_occurrence TEXT",
     ):
         try:
             conn.execute(ddl)
@@ -213,6 +216,11 @@ def submit_report():
         time_slot = request.form.get("time_slot", "").strip()
         incident_type = request.form.get("incident_type", "").strip()
         description = request.form.get("description", "").strip()
+        responder = request.form.get("responder", "").strip()
+        location = request.form.get("location", "").strip()
+        cctv_secured = request.form.get("cctv_secured", "").strip()
+        food_mixed = request.form.get("food_mixed", "").strip()
+        additional_occurrence = request.form.get("additional_occurrence", "").strip()
         customer_name = request.form.get("customer_name", "").strip()
         customer_phone = request.form.get("customer_phone", "").strip()
         action_taken = request.form.get("action_taken", "").strip()
@@ -241,7 +249,7 @@ def submit_report():
                 flash(e, "error")
             return render_template(
                 "submit.html", brands=BRANDS, incident_types=INCIDENT_TYPES,
-                time_slots=TIME_SLOTS, form=request.form
+                time_slots=TIME_SLOTS, yes_no_options=YES_NO_OPTIONS, form=request.form
             )
 
         # 사진 저장
@@ -261,13 +269,13 @@ def submit_report():
         conn.execute("""
             INSERT INTO reports (
                 brand, store_code, store_name, incident_date, time_slot, incident_datetime,
-                incident_type, description,
+                incident_type, description, responder, location, cctv_secured, food_mixed, additional_occurrence,
                 customer_name, customer_phone, action_taken, reporter_name,
                 status, photo_filenames, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             brand, store_code, store_name, incident_date, time_slot, display_datetime,
-            incident_type, description,
+            incident_type, description, responder, location, cctv_secured, food_mixed, additional_occurrence,
             customer_name, customer_phone, action_taken, reporter_name,
             "접수", ",".join(saved_filenames), datetime.now().isoformat()
         ))
@@ -278,7 +286,7 @@ def submit_report():
 
     return render_template(
         "submit.html", brands=BRANDS, incident_types=INCIDENT_TYPES, time_slots=TIME_SLOTS,
-        form={"description": DEFAULT_DESCRIPTION_TEMPLATE}
+        yes_no_options=YES_NO_OPTIONS, form={}
     )
 
 
@@ -413,6 +421,7 @@ def export_excel():
 
     headers = [
         "번호", "브랜드", "매장코드", "매장명", "사고발생일", "시간대", "사고유형", "사고내용",
+        "응대자", "발생위치", "CCTV 확보여부", "음식 혼입여부(이물질/해충)", "주변·매장 내 추가발생 여부",
         "고객명", "고객연락처", "매장조치내용", "작성자", "처리상태",
         "사진개수", "접수시각"
     ]
@@ -431,13 +440,15 @@ def export_excel():
         ws.append([
             row["id"], row["brand"], row["store_code"], row["store_name"],
             row["incident_date"], row["time_slot"],
-            row["incident_type"], row["description"], row["customer_name"],
+            row["incident_type"], row["description"],
+            row["responder"], row["location"], row["cctv_secured"], row["food_mixed"], row["additional_occurrence"],
+            row["customer_name"],
             row["customer_phone"], row["action_taken"], row["reporter_name"],
             row["status"], photo_count, row["created_at"]
         ])
 
     # 열 너비 자동 조정 (대략)
-    widths = [6, 12, 10, 14, 12, 12, 18, 40, 12, 14, 30, 10, 10, 8, 20]
+    widths = [6, 12, 10, 14, 12, 12, 18, 40, 10, 14, 12, 20, 20, 12, 14, 30, 10, 10, 8, 20]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
