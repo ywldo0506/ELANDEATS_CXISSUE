@@ -68,7 +68,8 @@
             <th>브랜드</th>
             <th>매장코드</th>
             <th>매장명</th>
-            <th>사고발생일시</th>
+            <th>사고발생일</th>
+            <th>시간대</th>
             <th>사고유형</th>
             <th>사고내용</th>
             <th>고객정보</th>
@@ -85,7 +86,8 @@
             <td>{{ r.brand }}</td>
             <td>{{ r.store_code }}</td>
             <td>{{ r.store_name }}</td>
-            <td>{{ r.incident_datetime }}</td>
+            <td>{{ r.incident_date }}</td>
+            <td>{{ r.time_slot }}</td>
             <td>{{ r.incident_type }}</td>
             <td style="max-width:260px;">{{ r.description }}</td>
             <td>{{ r.customer_name }} {{ r.customer_phone }}</td>
