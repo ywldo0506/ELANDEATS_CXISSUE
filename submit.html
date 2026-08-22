@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>매장 사고보고</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>매장 사고보고</h1>
+    <div class="subtitle">사고 발생 시 아래 항목을 작성해 주세요. 접수 즉시 CX팀으로 전달됩니다.</div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="card">
+      <form method="POST" enctype="multipart/form-data">
+        <label class="required">브랜드</label>
+        <select name="brand" required>
+          <option value="">선택해주세요</option>
+          {% for b in brands %}
+            <option value="{{ b }}" {% if form.get('brand') == b %}selected{% endif %}>{{ b }}</option>
+          {% endfor %}
+        </select>
+
+        <label class="required">매장코드</label>
+        <input type="text" id="store_code" name="store_code" placeholder="매장코드를 입력하세요" value="{{ form.get('store_code', '') }}" autocomplete="off" required>
+        <div id="store_lookup_status" style="margin-top:6px; font-size:13px;"></div>
+        <input type="hidden" id="store_name" name="store_name" value="{{ form.get('store_name', '') }}">
+
+        <label class="required">사고 발생일</label>
+        <input type="date" name="incident_date" value="{{ form.get('incident_date', '') }}" required>
+
+        <label class="required">시간대</label>
+        <div class="time-slot-group">
+          {% for slot in time_slots %}
+            <label class="time-slot-option">
+              <input type="radio" name="time_slot" value="{{ slot }}" {% if form.get('time_slot') == slot %}checked{% endif %} required>
+              <span>{{ slot }}</span>
+            </label>
+          {% endfor %}
+        </div>
+
+        <label class="required">사고 유형</label>
+        <select name="incident_type" required>
+          <option value="">선택해주세요</option>
+          {% for t in incident_types %}
+            <option value="{{ t }}" {% if form.get('incident_type') == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+
+        <label class="required">사고 내용</label>
+        <textarea name="description" placeholder="언제, 어디서, 무슨 일이 있었는지 최대한 구체적으로 작성해주세요.">{{ form.get('description', '') }}</textarea>
+
+        <label>고객명 (선택)</label>
+        <input type="text" name="customer_name" value="{{ form.get('customer_name', '') }}">
+
+        <label>고객 연락처 (선택)</label>
+        <input type="tel" name="customer_phone" placeholder="010-0000-0000" value="{{ form.get('customer_phone', '') }}">
+
+        <label>매장 조치 내용</label>
+        <textarea name="action_taken" placeholder="현장에서 어떻게 조치했는지 작성해주세요.">{{ form.get('action_taken', '') }}</textarea>
+
+        <label class="required">작성자</label>
+        <input type="text" name="reporter_name" placeholder="담당자 이름" value="{{ form.get('reporter_name', '') }}" required>
+
+        <label>사진 첨부 (여러 장 선택 가능)</label>
+        <input type="file" name="photos" accept="image/*" multiple>
+
+        <div class="submit-row">
+          <button type="submit" class="btn">사고보고 제출</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const codeInput = document.getElementById('store_code');
+    const nameHidden = document.getElementById('store_name');
+    const statusBox = document.getElementById('store_lookup_status');
+    const brandSelect = document.querySelector('select[name="brand"]');
+    let lookupTimer = null;
+
+    function showStatus(text, ok) {
+      statusBox.textContent = text;
+      statusBox.style.color = ok ? '#2E9E5B' : '#D64545';
+    }
+
+    codeInput.addEventListener('input', function () {
+      const code = codeInput.value.trim();
+      nameHidden.value = '';
+      if (!code) {
+        showStatus('', true);
+        return;
+      }
+      clearTimeout(lookupTimer);
+      lookupTimer = setTimeout(function () {
+        showStatus('조회 중...', true);
+        fetch('/api/store-lookup?code=' + encodeURIComponent(code))
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (data.found) {
+              nameHidden.value = data.store_name;
+              showStatus('매장명: ' + data.store_name, true);
+              // 브랜드가 시트에 있고 아직 선택 안 했으면 자동 선택
+              if (data.brand && brandSelect && !brandSelect.value) {
+                for (const opt of brandSelect.options) {
+                  if (opt.value === data.brand) {
+                    brandSelect.value = data.brand;
+                    break;
+                  }
+                }
+              }
+            } else {
+              showStatus(data.error ? data.error : '일치하는 매장코드가 없습니다. 코드를 다시 확인해주세요.', false);
+            }
+          })
+          .catch(function () {
+            showStatus('매장 조회 중 오류가 발생했습니다.', false);
+          });
+      }, 400); // 입력 멈춘 후 0.4초 뒤 조회 (매 글자마다 요청 방지)
+    });
+
+    // 폼 제출 직전, 매장명이 아직 비어있으면 제출을 막고 안내
+    document.querySelector('form').addEventListener('submit', function (e) {
+      if (codeInput.value.trim() && !nameHidden.value) {
+        e.preventDefault();
+        showStatus('매장코드를 확인해주세요. 매장명이 자동으로 표시되어야 제출할 수 있습니다.', false);
+      }
+    });
+  </script>
+</body>
+</html>
