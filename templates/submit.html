@@ -59,6 +59,36 @@
         <label class="required">사고 내용</label>
         <textarea name="description" placeholder="언제, 어디서, 무슨 일이 있었는지 최대한 구체적으로 작성해주세요.">{{ form.get('description', '') }}</textarea>
 
+        <label>응대자</label>
+        <input type="text" name="responder" placeholder="응대한 직원 이름" value="{{ form.get('responder', '') }}">
+
+        <label>발생 위치</label>
+        <input type="text" name="location" placeholder="예: 샐러드바, 홀 3번 테이블" value="{{ form.get('location', '') }}">
+
+        <label>CCTV 확보 여부</label>
+        <select name="cctv_secured">
+          <option value="">선택 안 함</option>
+          {% for opt in yes_no_options %}
+            <option value="{{ opt }}" {% if form.get('cctv_secured') == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+
+        <label>음식 혼입 여부 (이물질/해충)</label>
+        <select name="food_mixed">
+          <option value="">선택 안 함</option>
+          {% for opt in yes_no_options %}
+            <option value="{{ opt }}" {% if form.get('food_mixed') == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+
+        <label>주변 및 매장 내 추가 발생 여부 (해충)</label>
+        <select name="additional_occurrence">
+          <option value="">선택 안 함</option>
+          {% for opt in yes_no_options %}
+            <option value="{{ opt }}" {% if form.get('additional_occurrence') == opt %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+
         <label>고객명 (선택)</label>
         <input type="text" name="customer_name" value="{{ form.get('customer_name', '') }}">
 
