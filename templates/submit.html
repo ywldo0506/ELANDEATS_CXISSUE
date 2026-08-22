@@ -34,8 +34,18 @@
         <div id="store_lookup_status" style="margin-top:6px; font-size:13px;"></div>
         <input type="hidden" id="store_name" name="store_name" value="{{ form.get('store_name', '') }}">
 
-        <label class="required">사고 발생일시</label>
-        <input type="datetime-local" name="incident_datetime" value="{{ form.get('incident_datetime', '') }}" required>
+        <label class="required">사고 발생일</label>
+        <input type="date" name="incident_date" value="{{ form.get('incident_date', '') }}" required>
+
+        <label class="required">시간대</label>
+        <div class="time-slot-group">
+          {% for slot in time_slots %}
+            <label class="time-slot-option">
+              <input type="radio" name="time_slot" value="{{ slot }}" {% if form.get('time_slot') == slot %}checked{% endif %} required>
+              <span>{{ slot }}</span>
+            </label>
+          {% endfor %}
+        </div>
 
         <label class="required">사고 유형</label>
         <select name="incident_type" required>
