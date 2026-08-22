@@ -81,12 +81,11 @@
           {% endfor %}
         </select>
 
-        <label>주변 및 매장 내 추가 발생 여부 (해충)</label>
-        <select name="additional_occurrence">
-          <option value="">선택 안 함</option>
-          {% for opt in yes_no_options %}
-            <option value="{{ opt }}" {% if form.get('additional_occurrence') == opt %}selected{% endif %}>{{ opt }}</option>
-          {% endfor %}
+         <label>주변 및 매장 내 추가 발생 여부 (해충)</label>
+        <textarea name="additional_occurrence" placeholder="자유롭게 작성해주세요">{{ form.get('additional_occurrence', '') }}</textarea>
+
+        <label class="required">고객명</label>
+        <input type="text" name="customer_name" value="{{ form.get('customer_name', '') }}" required>
         </select>
 
         <label>고객명 (선택)</label>
